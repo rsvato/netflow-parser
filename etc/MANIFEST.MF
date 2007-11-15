@@ -1,0 +1,2 @@
+Class-Path: postgresql-8.1-405.jdbc3.jar
+Main-Class: netflow.Main
