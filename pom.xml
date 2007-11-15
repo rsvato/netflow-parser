@@ -26,14 +26,15 @@
                 </configuration>
             </plugin>
             <plugin>
-            <artifactId>maven-jar-plugin</artifactId>
-            <configuration>
-            <archive>
-            <manifest>
-            <addClasspath>true</addClasspath>
-            </manifest>
-            </archive>
-            </configuration>
+              <artifactId>maven-jar-plugin</artifactId>
+              <configuration>
+                <archive>
+                  <manifest>
+                    <mainClass>netflow.Main</mainClass>
+                    <addClasspath>true</addClasspath>
+                  </manifest>
+                </archive>
+              </configuration>
             </plugin>
         </plugins>
     </build>
