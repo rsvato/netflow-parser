@@ -5,6 +5,7 @@ import org.apache.commons.logging.LogFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.StringTokenizer;
 
 /**
  * @author slava
@@ -43,14 +44,14 @@ public class NetworkDefinition {
     public boolean isMyAddress(String address) {
         boolean result = false;
         try {
-            InetAddress foreign = InetAddress.getByName(address);
+            //InetAddress foreign = InetAddress.getByName(address);
             if (na == 0) {
                 na = addrToLong(networkAddress);
             }
             if (nm == 0) {
                 nm = addrToLong(netmask);
             }
-            long fa = addrToLong(foreign);
+            long fa = addrToLong(address);
             if ((na & nm) == (fa & nm)) {
                 if (getBroadcastAddress() == fa) {
                     result = getBroadcastAddress() == na; // say, 10.0.4.1/32 - very rare and illegal, but used
@@ -59,7 +60,7 @@ public class NetworkDefinition {
                 }
             }
             if (returnAddress != null && ! result){
-                result = foreign.equals(returnAddress);
+                    result = fa == addrToLong(returnAddress);
             }
         } catch (Exception e) {
             log.error("Bad host: " + e.getMessage());
@@ -69,8 +70,24 @@ public class NetworkDefinition {
 
     public static long addrToLong(InetAddress address) {
         byte[] rawIP = address.getAddress();
+        return convertToLong(rawIP);
+    }
+
+    public static long addrToLong(String addr){
+      StringTokenizer st = new StringTokenizer(addr, ".");
+      byte[] rawIp = new byte[4];
+      int i = 0;
+      while (st.hasMoreTokens() && i < 4){
+        String nextToken = st.nextToken();
+        int tokenValue = Integer.parseInt(nextToken);
+        rawIp[i++] = (byte) tokenValue;
+      }
+      return convertToLong(rawIp);
+    }
+
+    private static long convertToLong(byte[] rawIP) {
         return ((rawIP[0] & 0xff) << 24 | (rawIP[1] & 0xff) << 16 |
-                (rawIP[2] & 0xff) << 8 | (rawIP[3] & 0xff)) & 0xffffffffL;
+           (rawIP[2] & 0xff) << 8 | (rawIP[3] & 0xff)) & 0xffffffffL;
     }
 
     private long getBroadcastAddress() {
