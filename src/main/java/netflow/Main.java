@@ -34,6 +34,7 @@ public class Main {
         }
         String fileName = args[0];
         String property = "false";
+        StringTokenizerParser p = new StringTokenizerParser();
         try {
             property = System.getProperty("process.all");
         } catch (NullPointerException e) {
@@ -63,7 +64,7 @@ public class Main {
         while ((line = reader.readLine()) != null) {
             if (!line.startsWith("#")) {
                 if (last.before(newDate) || processAllFile) {
-                    String[] elements = line.split("\\s+");
+                    String[] elements = p.parseLine(line);
                     processor.parseLine(elements);
                     goodLines++;
                 } else {
@@ -92,4 +93,16 @@ public class Main {
 
     }
 
+}
+class StringTokenizerParser {
+        public String[] parseLine(String s){
+           StringTokenizer st = new StringTokenizer(s, " ");
+           int size = st.countTokens();
+           String[] result = new String[size];
+           int i = 0;
+           while (st.hasMoreTokens()){
+              result[i++] = st.nextToken();
+           }
+           return result;
+        }
 }
