@@ -74,15 +74,19 @@ public class NetworkDefinition {
     }
 
     public static long addrToLong(String addr){
-      StringTokenizer st = new StringTokenizer(addr, ".");
-      byte[] rawIp = new byte[4];
-      int i = 0;
-      while (st.hasMoreTokens() && i < 4){
-        String nextToken = st.nextToken();
-        int tokenValue = Integer.parseInt(nextToken);
-        rawIp[i++] = (byte) tokenValue;
-      }
-      return convertToLong(rawIp);
+        String pattern = ".";
+        int ind = 0;
+        int max = 4;
+        int cur = 0;
+        byte[] rawIp = new byte[4];
+        while ((ind = addr.indexOf(pattern)) != -1 && cur < max){
+           rawIp[cur++] = (byte) Integer.parseInt(addr.substring(0, ind));
+           addr = addr.substring(ind + 1);
+           if (addr.indexOf(pattern) == -1){
+                rawIp[cur++] = (byte) Integer.parseInt(addr);
+           }
+       }
+       return convertToLong(rawIp);
     }
 
     private static long convertToLong(byte[] rawIP) {
