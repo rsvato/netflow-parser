@@ -16,8 +16,11 @@ public class NetworkDefinition {
     private InetAddress networkAddress;
     private InetAddress netmask;
     private InetAddress returnAddress;
+    private String snetmask;
+    private String saddress;
     private long na;
     private long nm;
+    private long broadcast;
     private static final Log log = LogFactory.getLog(NetworkDefinition.class);
 
     public NetworkDefinition(Integer nid, String network, String netmask, String returnAd) {
@@ -25,6 +28,8 @@ public class NetworkDefinition {
             this.networkId = nid;
             this.networkAddress = InetAddress.getByName(network);
             this.netmask = InetAddress.getByName(netmask);
+            this.snetmask = netmask;
+            this.saddress = network;
             this.returnAddress = InetAddress.getByName(returnAd);
         } catch (UnknownHostException e) {
             throw new IllegalArgumentException(e.getMessage());
@@ -43,7 +48,21 @@ public class NetworkDefinition {
 
     public boolean isMyAddress(String address) {
         boolean result = false;
+        if ("255.255.255.255".equals(snetmask)){
+                return saddress.equals(address);
+        }
+
+        if (address == null || saddress == null || ! saddress.startsWith(address.substring(0, 3))){ // at least first octet
+                return false;
+        }
+
+        if (address.equals(saddress)){
+                return true;
+        }
+
+        
         try {
+                if (! result){
             //InetAddress foreign = InetAddress.getByName(address);
             if (na == 0) {
                 na = addrToLong(networkAddress);
@@ -62,6 +81,7 @@ public class NetworkDefinition {
             if (returnAddress != null && ! result){
                     result = fa == addrToLong(returnAddress);
             }
+                }
         } catch (Exception e) {
             log.error("Bad host: " + e.getMessage());
         }
@@ -95,7 +115,10 @@ public class NetworkDefinition {
     }
 
     private long getBroadcastAddress() {
-        return ((na | (~(nm) & 0xff)));
+        if (broadcast == 0) {
+                broadcast = ((na | (~(nm) & 0xff)));
+        }
+        return broadcast;
     }
 
     private InetAddress getReadableBroadcast() throws UnknownHostException {
