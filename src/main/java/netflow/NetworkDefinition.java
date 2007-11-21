@@ -41,6 +41,8 @@ public class NetworkDefinition {
             this.networkId = nid;
             this.networkAddress = InetAddress.getByName(network);
             this.netmask = InetAddress.getByName(netmask);
+            this.saddress = network;
+            this.snetmask = netmask;
         } catch (UnknownHostException e) {
             throw new IllegalArgumentException(e.getMessage());
         }
@@ -52,7 +54,7 @@ public class NetworkDefinition {
                 return saddress.equals(address);
         }
 
-        if (address == null || saddress == null || ! saddress.startsWith(address.substring(0, 3))){ // at least first octet
+        if (address == null || saddress == null){ // at least first octet
                 return false;
         }
 
@@ -60,6 +62,9 @@ public class NetworkDefinition {
                 return true;
         }
 
+        if (! saddress.startsWith(address.substring(0, address.indexOf(".")))){ //first octet
+                return false;
+        }
         
         try {
                 if (! result){
