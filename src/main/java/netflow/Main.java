@@ -54,7 +54,7 @@ public class Main {
         log.info("Begin process " + guard);
         Date last = DatabaseProxy.getInstance().getMaxDate();
         if (last == null) {
-            log.debug("Date empty. Creating a new one");
+            log.info("Date empty. Creating a new one");
             last = new java.util.Date();
             last.setTime(0L);
         }

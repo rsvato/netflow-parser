@@ -36,9 +36,9 @@ public class LineProcessor {
         NetworkDefinition input = netId(elements[2]);
         NetworkDefinition output = netId(elements[3]);
 
-        if (input != null && output != null){
+        /*if (input != null && output != null){
             return; // internal traffic
-        }
+        }*/
 
         HostCache cache = HostCache.getInstance();
         if (output != null) {
