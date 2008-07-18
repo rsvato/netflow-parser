@@ -4,13 +4,9 @@
  */
 package netflow;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.*;
+import java.util.Date;
 import java.io.FileInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -211,6 +207,96 @@ public class DatabaseProxy {
         return result;
     }
 
+    public void doDailyAggregation(){
+        log.debug("doDailyAggregation(): <<<<");
+        try{
+            List<AggregationRecord> results = getAggregationResults();
+            List<AggregationRecord> toInsert = new ArrayList<AggregationRecord>();
+            List<AggregationRecord> toUpdate = new ArrayList<AggregationRecord>();
+            for (AggregationRecord result : results) {
+               if (aggregationAlreadyStored(result)){
+                   toUpdate.add(result);
+               }else{
+                   toInsert.add(result);
+               }
+            }
+            addAggregationResults(toInsert);
+            updateAggregationResults(toUpdate);
+       } catch (SQLException e) {
+           log.error("Query falied: " + e.getMessage());
+       }
+        log.debug("doDailyAggregation(): >>>>");
+    }
+
+    private void updateAggregationResults(List<AggregationRecord> records) throws SQLException {
+        if (records.isEmpty()){
+            log.debug("Nothing to update");
+            return;
+        }
+        log.debug("updateAggregationResults(): <<<<");
+        log.debug(records.size() + " to update");
+        PreparedStatement pstmt = con.prepareStatement("update ntraffic_by_day set input = ?, output = ? where client_id = ? and dat = ?");
+        for (AggregationRecord record : records) {
+            pstmt.setLong(1, record.getInput());
+            pstmt.setLong(2, record.getOutput());
+            pstmt.setInt(3, record.getClientId());
+            pstmt.setDate(4, record.getDate());
+            pstmt.addBatch();
+        }
+        final int[] ints = pstmt.executeBatch();
+        log.debug(ints.length + " records updated");
+        log.debug("updateAggregationResults(): >>>>");
+
+    }
+
+    private void addAggregationResults(List<AggregationRecord> records) throws SQLException {
+        if (records.isEmpty()){
+            log.debug("Nothing to insert");
+            return;
+        }
+
+        log.debug("insertAggregationResults(): <<<<");
+        log.debug(records.size() + " to insert");
+        PreparedStatement pstmt = con.prepareStatement("insert into ntraffic_by_day(input, output, client_id, dat) values(?, ?, ?, ?)");
+        for (AggregationRecord record : records) {
+            pstmt.setLong(1, record.getInput());
+            pstmt.setLong(2, record.getOutput());
+            pstmt.setInt(3, record.getClientId());
+            pstmt.setDate(4, record.getDate());
+            pstmt.addBatch();
+        }
+        final int[] ints = pstmt.executeBatch();
+        log.debug(ints.length + " records inserted");
+        log.debug("insertAggregationResults(): >>>>");
+    }
+
+    private List<AggregationRecord> getAggregationResults() throws SQLException {
+        log.debug("getAggregationResults(): <<<");
+        String collect = "select client, date_trunc('day', dat)::date as dat,  sum(incoming) as input, sum(outcoming) " +
+                "as output from client_ntraffic where dat = date_trunc('day', now())::timestamp group by 1,2";
+        PreparedStatement ps = con.prepareStatement(collect);
+        ResultSet rs = ps.executeQuery();
+        List<AggregationRecord> results = new ArrayList<AggregationRecord>();
+        while (rs.next()){
+            results.add(new AggregationRecord(rs.getInt(1), rs.getDate(2), rs.getLong(3), rs.getLong(4)));
+        }
+        rs.close();
+        ps.close();
+        log.debug("getAggregationResults(): >>>");
+        return results;
+    }
+
+    private boolean aggregationAlreadyStored(AggregationRecord record) throws SQLException {
+       String query = "select count(*) from ntraffic_by_day where client_id = ? and dat = ?";
+        PreparedStatement ps = con.prepareStatement(query);
+        ps.setInt(1, record.getClientId());
+        ps.setDate(2, record.getDate());
+        ResultSet rs = ps.executeQuery();
+        rs.next();
+        int result = rs.getInt(1);
+        return result > 0;
+    }
+
     public void close(){
         try{
             con.close();
@@ -219,4 +305,34 @@ public class DatabaseProxy {
         }
     }
 
+    private class AggregationRecord {
+        private int clientId;
+        private java.sql.Date date;
+        private long input;
+        private long output;
+
+        public AggregationRecord(int clientId, java.sql.Date date, long input, long output) {
+            this.clientId = clientId;
+            this.date = date;
+            this.input = input;
+            this.output = output;
+        }
+
+        public int getClientId() {
+            return clientId;
+        }
+
+        public java.sql.Date getDate() {
+            return date;
+        }
+
+        public long getInput() {
+            return input;
+        }
+
+        public long getOutput() {
+            return output;
+        }
+
+    }
 }

@@ -86,6 +86,7 @@ public class Main {
             lines++;
         }
         DatabaseProxy.getInstance().doAggregation();
+        DatabaseProxy.getInstance().doDailyAggregation();
         DatabaseProxy.getInstance().close();
         now = System.currentTimeMillis() - now;
         log.info(lines + " Comments: " + comments + ", Effective lines: " + goodLines + ", Old lines:" + oldlines);
