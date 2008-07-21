@@ -273,7 +273,7 @@ public class DatabaseProxy {
     private List<AggregationRecord> getAggregationResults() throws SQLException {
         log.debug("getAggregationResults(): <<<");
         String collect = "select client, date_trunc('day', dat)::date as dat,  sum(incoming) as input, sum(outcoming) " +
-                "as output from client_ntraffic where dat = date_trunc('day', now())::timestamp group by 1,2";
+                "as output from client_ntraffic where dat >= date_trunc('day', now())::timestamp group by 1,2";
         PreparedStatement ps = con.prepareStatement(collect);
         ResultSet rs = ps.executeQuery();
         List<AggregationRecord> results = new ArrayList<AggregationRecord>();
