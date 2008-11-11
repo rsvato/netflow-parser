@@ -301,8 +301,8 @@ public class DatabaseProxy {
             results.add(new AggregationRecord(rs.getInt(1), rs.getDate(2), rs.getLong(3), rs.getLong(4)));
           }
           rs.close();
-          ps.close();
         }
+          ps.close();
         log.debug("getAggregationResults(): >>>");
         return results;
     }
