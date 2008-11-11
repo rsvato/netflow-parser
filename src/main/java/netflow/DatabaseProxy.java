@@ -272,16 +272,37 @@ public class DatabaseProxy {
 
     private List<AggregationRecord> getAggregationResults() throws SQLException {
         log.debug("getAggregationResults(): <<<");
-        String collect = "select client, date_trunc('day', dat)::date as dat,  sum(incoming) as input, sum(outcoming) " +
-                "as output from client_ntraffic where dat >= date_trunc('day', now())::timestamp group by 1,2";
-        PreparedStatement ps = con.prepareStatement(collect);
-        ResultSet rs = ps.executeQuery();
-        List<AggregationRecord> results = new ArrayList<AggregationRecord>();
-        while (rs.next()){
-            results.add(new AggregationRecord(rs.getInt(1), rs.getDate(2), rs.getLong(3), rs.getLong(4)));
+        log.debug("Getting user list");
+
+        String unq = "select distinct client from networks";
+
+        List<Integer> clients = new ArrayList<Integer>();
+        PreparedStatement pst = con.prepareStatement(unq);
+        ResultSet rst = pst.executeQuery();
+
+        while(rst.next()){
+                clients.add(rst.getInt(1));
         }
-        rs.close();
-        ps.close();
+
+        rst.close();
+        pst.close();
+        
+        String collect = "select client, date_trunc('day', dat)::date as dat,  sum(incoming) as input, sum(outcoming) " +
+                "as output from client_ntraffic where dat >= date_trunc('day', now())::timestamp and client = ? group by 1,2";
+
+        
+        PreparedStatement ps = con.prepareStatement(collect);
+
+        List<AggregationRecord> results = new ArrayList<AggregationRecord>();
+        for (Integer id : clients){
+                ps.setInt(1, id);
+          ResultSet rs = ps.executeQuery();
+          if (rs.next()){
+            results.add(new AggregationRecord(rs.getInt(1), rs.getDate(2), rs.getLong(3), rs.getLong(4)));
+          }
+          rs.close();
+          ps.close();
+        }
         log.debug("getAggregationResults(): >>>");
         return results;
     }
