@@ -205,15 +205,18 @@ public class DatabaseProxy {
                    "and nn_summ.dat between ? and ? and cl.id = ? group by 1, 2";
             log.info(logStr + " <<<<");
             List<Integer> clients = getNetworkedClients();
+            PreparedStatement pstmt = con.prepareStatement(sql);
             for (Integer client : clients) {
+                log.debug("Client " + client);
                 start = getStartTimestamp(start, end, client);
-                PreparedStatement pstmt = con.prepareStatement(sql);
                 pstmt.setTimestamp(1, start);
                 pstmt.setTimestamp(2, end);
                 pstmt.setInt(3, client);
+                log.debug("Minutes aggregation");
                 pstmt.executeUpdate();
-                pstmt.close();
+                log.debug("Minutes aggregation done");
             }
+            pstmt.close();
         } catch (SQLException e) {
             log.error(logStr + " Aggregation error: " + e.getMessage());
             e.printStackTrace(System.err);
