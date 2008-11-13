@@ -218,6 +218,7 @@ public class DatabaseProxy {
     }
 
     private Timestamp getStartTimestamp(Timestamp start, Timestamp end) {
+        Timestamp result = null;
         log.debug("Getting real start ts");
         String maxDate = "select max(dat) from client_ntraffic where dat between ? and ?";
         try{
@@ -227,11 +228,16 @@ public class DatabaseProxy {
             ResultSet rs = pst.executeQuery();
 
             if (rs.next()){
-                start = rs.getTimestamp(1);
+                result = rs.getTimestamp(1);
             }
         }catch (SQLException e){
             log.error(logStr + " Aggregation error: " + e.getMessage());
             e.printStackTrace(System.err);
+        }
+
+        if (result == null){
+            log.debug("Impossible to find start within interval: " + start + " " + end);
+            result = start;
         }
         log.debug("Real start is: " + start);
         return start;
