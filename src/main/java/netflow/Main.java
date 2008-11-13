@@ -42,6 +42,7 @@ public class Main {
             Date d = Utils.parseArgument(date);
             DatabaseProxy.getInstance().doAggregation(d);
             DatabaseProxy.getInstance().doDailyAggregation(d);
+            return;
         }
 
         String fileName = args[0];
@@ -62,6 +63,18 @@ public class Main {
         }
         boolean doAggregation = Boolean.valueOf(ag);
 
+        long now = importFile(fileName, p, processAllFile);
+        if (doAggregation) {
+            DatabaseProxy.getInstance().doAggregation();
+            DatabaseProxy.getInstance().doDailyAggregation();
+        }
+        DatabaseProxy.getInstance().close();
+        now = System.currentTimeMillis() - now;
+        log.info("Total processing: " + now + " ms");
+
+    }
+
+    private static long importFile(String fileName, StringTokenizerParser p, boolean processAllFile) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(fileName));
         int lines = 0;
         int comments = 0;
@@ -71,12 +84,12 @@ public class Main {
         DateFormat df = new SimpleDateFormat("HH:mm:ss EEE dd MMM yyyy",
                 Locale.ENGLISH);
         long now = System.currentTimeMillis();
-        Date guard = new java.util.Date();
+        Date guard = new Date();
         log.info("Begin process " + guard);
         Date last = DatabaseProxy.getInstance().getMaxDate();
         if (last == null) {
             log.info("Date empty. Creating a new one");
-            last = new java.util.Date();
+            last = new Date();
             last.setTime(0L);
         }
         Date newDate = guard;
@@ -106,15 +119,8 @@ public class Main {
             }
             lines++;
         }
-        if (doAggregation) {
-            DatabaseProxy.getInstance().doAggregation();
-            DatabaseProxy.getInstance().doDailyAggregation();
-        }
-        DatabaseProxy.getInstance().close();
-        now = System.currentTimeMillis() - now;
         log.info(lines + " Comments: " + comments + ", Effective lines: " + goodLines + ", Old lines:" + oldlines);
-        log.info("Total processing: " + now + " ms");
-
+        return now;
     }
 
 }
