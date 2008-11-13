@@ -54,7 +54,7 @@ public class Main {
         }
         boolean processAllFile = Boolean.valueOf(property);
 
-        String ag = "false";
+        String ag = "true";
         try {
             ag = System.getProperty("netflow.doAggregation");
         } catch (NullPointerException e) {
