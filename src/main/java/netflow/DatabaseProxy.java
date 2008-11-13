@@ -240,7 +240,7 @@ public class DatabaseProxy {
             result = start;
         }
         log.debug("Real start is: " + start);
-        return start;
+        return result;
     }
 
     private boolean hasRecord(Timestamp dat, String host, Integer networkId){
