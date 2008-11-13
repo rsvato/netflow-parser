@@ -195,7 +195,8 @@ public class DatabaseProxy {
        }
 
        Timestamp start = Utils.getStartDate(date);
-        Timestamp end = Utils.getEndDate(date);
+       Timestamp end = Utils.getEndDate(date);
+       start = getStartTimestamp(start, end);
 
        String sql = "insert into client_ntraffic(client, dat, incoming, outcoming) " +
                "select cl.id, nn_summ.dat, sum(nn_summ.input), sum(nn_summ.output) from cl, nn_summ where " +
@@ -214,6 +215,26 @@ public class DatabaseProxy {
             e.printStackTrace(System.err);
         }
         log.info(logStr + " >>>>");
+    }
+
+    private Timestamp getStartTimestamp(Timestamp start, Timestamp end) {
+        log.debug("Getting real start ts");
+        String maxDate = "select max(dat) from client_ntraffic where dat between ? and ?";
+        try{
+            PreparedStatement pst = con.prepareStatement(maxDate);
+            pst.setTimestamp(1, start);
+            pst.setTimestamp(2, end);
+            ResultSet rs = pst.executeQuery();
+
+            if (rs.next()){
+                start = rs.getTimestamp(1);
+            }
+        }catch (SQLException e){
+            log.error(logStr + " Aggregation error: " + e.getMessage());
+            e.printStackTrace(System.err);
+        }
+        log.debug("Real start is: " + start);
+        return start;
     }
 
     private boolean hasRecord(Timestamp dat, String host, Integer networkId){

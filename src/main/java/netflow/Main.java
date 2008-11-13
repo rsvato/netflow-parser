@@ -53,6 +53,15 @@ public class Main {
             log.info("Variable not defined. Assuming to false");
         }
         boolean processAllFile = Boolean.valueOf(property);
+
+        String ag = "false";
+        try {
+            ag = System.getProperty("netflow.doAggregation");
+        } catch (NullPointerException e) {
+            log.info("Variable not defined. Will do full aggregation for current date");
+        }
+        boolean doAggregation = Boolean.valueOf(ag);
+
         BufferedReader reader = new BufferedReader(new FileReader(fileName));
         int lines = 0;
         int comments = 0;
@@ -97,8 +106,10 @@ public class Main {
             }
             lines++;
         }
-        DatabaseProxy.getInstance().doAggregation();
-        DatabaseProxy.getInstance().doDailyAggregation();
+        if (doAggregation) {
+            DatabaseProxy.getInstance().doAggregation();
+            DatabaseProxy.getInstance().doDailyAggregation();
+        }
         DatabaseProxy.getInstance().close();
         now = System.currentTimeMillis() - now;
         log.info(lines + " Comments: " + comments + ", Effective lines: " + goodLines + ", Old lines:" + oldlines);
