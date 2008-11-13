@@ -202,7 +202,7 @@ public class DatabaseProxy {
             String sql = "insert into client_ntraffic(client, dat, incoming, outcoming) " +
                    "select cl.id, nn_summ.dat, sum(nn_summ.input), sum(nn_summ.output) from cl, nn_summ where " +
                    "nn_summ.network_id in (select id from networks where client=cl.id) " +
-                   "and nn_summ.dat between ? and ? and cl.id = ? group by 1, 2";
+                   "and nn_summ.dat > ? and nn_summ.dat < ? and cl.id = ? group by 1, 2";
             log.info(logStr + " <<<<");
             List<Integer> clients = getNetworkedClients();
             PreparedStatement pstmt = con.prepareStatement(sql);
@@ -247,7 +247,7 @@ public class DatabaseProxy {
             log.debug("Impossible to find start within interval: " + start + " " + end);
             result = start;
         }
-        log.debug("Real start is: " + start);
+        log.debug("Real start is: " + result);
         return result;
     }
 
