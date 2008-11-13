@@ -231,7 +231,7 @@ public class DatabaseProxy {
                 result = rs.getTimestamp(1);
             }
         }catch (SQLException e){
-            log.error(logStr + " Aggregation error: " + e.getMessage());
+            log.error(" Aggregation error: " + e.getMessage());
             e.printStackTrace(System.err);
         }
 
