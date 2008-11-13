@@ -194,22 +194,26 @@ public class DatabaseProxy {
            return;
        }
 
-       Timestamp start = Utils.getStartDate(date);
-       Timestamp end = Utils.getEndDate(date);
-       start = getStartTimestamp(start, end);
-
-       String sql = "insert into client_ntraffic(client, dat, incoming, outcoming) " +
-               "select cl.id, nn_summ.dat, sum(nn_summ.input), sum(nn_summ.output) from cl, nn_summ where " +
-               "nn_summ.network_id in (select id from networks where client=cl.id) " +
-               "and nn_summ.dat between ? and ? group by 1, 2";
         String logStr = "doAggregation(): ";
-        log.info(logStr + " <<<<");
+        Timestamp start = Utils.getStartDate(date);
+        Timestamp end = Utils.getEndDate(date);
         try{
-            PreparedStatement pstmt = con.prepareStatement(sql);
-            pstmt.setTimestamp(1, start);
-            pstmt.setTimestamp(2, end);
-            pstmt.executeUpdate();
-            pstmt.close();
+
+            String sql = "insert into client_ntraffic(client, dat, incoming, outcoming) " +
+                   "select cl.id, nn_summ.dat, sum(nn_summ.input), sum(nn_summ.output) from cl, nn_summ where " +
+                   "nn_summ.network_id in (select id from networks where client=cl.id) " +
+                   "and nn_summ.dat between ? and ? and cl.id = ? group by 1, 2";
+            log.info(logStr + " <<<<");
+            List<Integer> clients = getNetworkedClients();
+            for (Integer client : clients) {
+                start = getStartTimestamp(start, end, client);
+                PreparedStatement pstmt = con.prepareStatement(sql);
+                pstmt.setTimestamp(1, start);
+                pstmt.setTimestamp(2, end);
+                pstmt.setInt(3, client);
+                pstmt.executeUpdate();
+                pstmt.close();
+            }
         } catch (SQLException e) {
             log.error(logStr + " Aggregation error: " + e.getMessage());
             e.printStackTrace(System.err);
@@ -217,14 +221,15 @@ public class DatabaseProxy {
         log.info(logStr + " >>>>");
     }
 
-    private Timestamp getStartTimestamp(Timestamp start, Timestamp end) {
+    private Timestamp getStartTimestamp(Timestamp start, Timestamp end, Integer client) {
         Timestamp result = null;
         log.debug("Getting real start ts");
-        String maxDate = "select max(dat) from client_ntraffic where dat between ? and ?";
+        String maxDate = "select max(dat) from client_ntraffic where dat between ? and ? and client = ?";
         try{
             PreparedStatement pst = con.prepareStatement(maxDate);
             pst.setTimestamp(1, start);
             pst.setTimestamp(2, end);
+            pst.setInt(3, client);
             ResultSet rs = pst.executeQuery();
 
             if (rs.next()){
@@ -349,20 +354,7 @@ public class DatabaseProxy {
 
     private List<AggregationRecord> getAggregationResults() throws SQLException {
         log.debug("getAggregationResults(): <<<");
-        log.debug("Getting user list");
-
-        String unq = "select distinct client from networks";
-
-        List<Integer> clients = new ArrayList<Integer>();
-        PreparedStatement pst = con.prepareStatement(unq);
-        ResultSet rst = pst.executeQuery();
-
-        while(rst.next()){
-                clients.add(rst.getInt(1));
-        }
-
-        rst.close();
-        pst.close();
+        List<Integer> clients = getNetworkedClients();
         
         String collect = "select client, date_trunc('day', dat)::date as dat,  sum(incoming) as input, sum(outcoming) " +
                 "as output from client_ntraffic where dat >= date_trunc('day', now())::timestamp and client = ? group by 1,2";
@@ -384,19 +376,10 @@ public class DatabaseProxy {
         return results;
     }
 
-    private List<AggregationRecord> getAggregationResults(Date date) throws SQLException {
-        if (date == null){
-            return getAggregationResults();
-        }
-        log.debug("getAggregationResults(date): <<<");
+    private List<Integer> getNetworkedClients() throws SQLException {
         log.debug("Getting user list");
 
         String unq = "select distinct client from networks";
-
-
-        Timestamp start = Utils.getStartDate(date);
-        Timestamp end = Utils.getEndDate(date);
-        log.debug("Parameters: " + start + ", " + end);
 
         List<Integer> clients = new ArrayList<Integer>();
         PreparedStatement pst = con.prepareStatement(unq);
@@ -408,11 +391,23 @@ public class DatabaseProxy {
 
         rst.close();
         pst.close();
+        return clients;
+    }
 
+    private List<AggregationRecord> getAggregationResults(Date date) throws SQLException {
+        if (date == null){
+            return getAggregationResults();
+        }
+        log.debug("getAggregationResults(date): <<<");
+        log.debug("Getting user list");
+
+        Timestamp start = Utils.getStartDate(date);
+        Timestamp end = Utils.getEndDate(date);
+        log.debug("Parameters: " + start + ", " + end);
+
+        List<Integer> clients = getNetworkedClients();
         String collect = "select client, date_trunc('day', dat)::date as dat,  sum(incoming) as input, sum(outcoming) " +
                 "as output from client_ntraffic where dat between ? and ? and client = ? group by 1,2";
-
-
         PreparedStatement ps = con.prepareStatement(collect);
 
         List<AggregationRecord> results = new ArrayList<AggregationRecord>();
