@@ -24,6 +24,7 @@ public class DatabaseProxy {
     private static final Log log = LogFactory.getLog(DatabaseProxy.class);
     private static final String CONFIGURATION = "configuration";
 
+
     private DatabaseProxy() {
         try {
             Properties props;
@@ -187,6 +188,34 @@ public class DatabaseProxy {
         log.info(logStr + " >>>>");
     }
 
+    public void doAggregation(Date date){
+       if (date == null){
+           doAggregation();
+           return;
+       }
+
+       Timestamp start = Utils.getStartDate(date);
+        Timestamp end = Utils.getEndDate(date);
+
+       String sql = "insert into client_ntraffic(client, dat, incoming, outcoming) " +
+               "select cl.id, nn_summ.dat, sum(nn_summ.input), sum(nn_summ.output) from cl, nn_summ where " +
+               "nn_summ.network_id in (select id from networks where client=cl.id) " +
+               "and nn_summ.dat between ? and ? group by 1, 2";
+        String logStr = "doAggregation(): ";
+        log.info(logStr + " <<<<");
+        try{
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setTimestamp(1, start);
+            pstmt.setTimestamp(2, end);
+            pstmt.executeUpdate();
+            pstmt.close();
+        } catch (SQLException e) {
+            log.error(logStr + " Aggregation error: " + e.getMessage());
+            e.printStackTrace(System.err);
+        }
+        log.info(logStr + " >>>>");
+    }
+
     private boolean hasRecord(Timestamp dat, String host, Integer networkId){
         boolean result = false;
         try {
@@ -211,6 +240,27 @@ public class DatabaseProxy {
         log.debug("doDailyAggregation(): <<<<");
         try{
             List<AggregationRecord> results = getAggregationResults();
+            List<AggregationRecord> toInsert = new ArrayList<AggregationRecord>();
+            List<AggregationRecord> toUpdate = new ArrayList<AggregationRecord>();
+            for (AggregationRecord result : results) {
+               if (aggregationAlreadyStored(result)){
+                   toUpdate.add(result);
+               }else{
+                   toInsert.add(result);
+               }
+            }
+            addAggregationResults(toInsert);
+            updateAggregationResults(toUpdate);
+       } catch (SQLException e) {
+           log.error("Query falied: " + e.getMessage());
+       }
+        log.debug("doDailyAggregation(): >>>>");
+    }
+
+    public void doDailyAggregation(Date d){
+        log.debug("doDailyAggregation(): <<<<");
+        try{
+            List<AggregationRecord> results = getAggregationResults(d);
             List<AggregationRecord> toInsert = new ArrayList<AggregationRecord>();
             List<AggregationRecord> toUpdate = new ArrayList<AggregationRecord>();
             for (AggregationRecord result : results) {
@@ -306,6 +356,54 @@ public class DatabaseProxy {
         log.debug("getAggregationResults(): >>>");
         return results;
     }
+
+    private List<AggregationRecord> getAggregationResults(Date date) throws SQLException {
+        if (date == null){
+            return getAggregationResults();
+        }
+        log.debug("getAggregationResults(date): <<<");
+        log.debug("Getting user list");
+
+        String unq = "select distinct client from networks";
+
+
+        Timestamp start = Utils.getStartDate(date);
+        Timestamp end = Utils.getEndDate(date);
+        log.debug("Parameters: " + start + ", " + end);
+
+        List<Integer> clients = new ArrayList<Integer>();
+        PreparedStatement pst = con.prepareStatement(unq);
+        ResultSet rst = pst.executeQuery();
+
+        while(rst.next()){
+                clients.add(rst.getInt(1));
+        }
+
+        rst.close();
+        pst.close();
+
+        String collect = "select client, date_trunc('day', dat)::date as dat,  sum(incoming) as input, sum(outcoming) " +
+                "as output from client_ntraffic where dat between ? and ? and client = ? group by 1,2";
+
+
+        PreparedStatement ps = con.prepareStatement(collect);
+
+        List<AggregationRecord> results = new ArrayList<AggregationRecord>();
+        for (Integer id : clients){
+            ps.setTimestamp(1, start);
+            ps.setTimestamp(2, end);
+            ps.setInt(3, id);
+          ResultSet rs = ps.executeQuery();
+          if (rs.next()){
+            results.add(new AggregationRecord(rs.getInt(1), rs.getDate(2), rs.getLong(3), rs.getLong(4)));
+          }
+          rs.close();
+        }
+          ps.close();
+        log.debug("getAggregationResults(): >>>");
+        return results;
+    }
+
 
     private boolean aggregationAlreadyStored(AggregationRecord record) throws SQLException {
        String query = "select count(*) from ntraffic_by_day where client_id = ? and dat = ?";

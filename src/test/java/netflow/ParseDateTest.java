@@ -22,4 +22,10 @@ public class ParseDateTest extends TestCase {
         System.out.println(result);
         assertNotNull(result);
     }
+
+    public void testDateArgument(){
+        Date d = Utils.parseArgument("2008-11-10");
+        System.out.println(d);
+        assertNotNull(d);
+    }
 }

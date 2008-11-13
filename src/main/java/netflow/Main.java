@@ -32,6 +32,18 @@ public class Main {
             System.err.println("Usage: netflow.Main <filename>");
             System.exit(1);
         }
+
+        if ("-aggreg".equals(args[0])){
+            if (args.length < 2){
+               System.err.println("Usage: netflow.Main -aggreg yyyy-MM-dd");
+                System.exit(1);
+            }
+            String date = args[1];
+            Date d = Utils.parseArgument(date);
+            DatabaseProxy.getInstance().doAggregation(d);
+            DatabaseProxy.getInstance().doDailyAggregation(d);
+        }
+
         String fileName = args[0];
         String property = "false";
         StringTokenizerParser p = new StringTokenizerParser();
