@@ -173,7 +173,7 @@ public class DatabaseProxy {
 
     private Collection<AggregationRecord> askForData(Integer clientId) throws SQLException {
         String sql = "select nn_summ.dat, sum(nn_summ.input), sum(nn_summ.output) from nn_summ where " +
-                " n_summ.network_id in (select id from networks where client= ?) " +
+                " nn_summ.network_id in (select id from networks where client= ?) " +
                 " and nn_summ.dat > (select max(dat) from client_ntraffic) group by 1";
         PreparedStatement pst = con.prepareStatement(sql);
         pst.setInt(1, clientId);
