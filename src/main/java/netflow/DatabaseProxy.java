@@ -170,17 +170,47 @@ public class DatabaseProxy {
         }
     }
 
+
+    private Collection<AggregationRecord> askForData(Integer clientId) throws SQLException {
+        String sql = "select nn_summ.dat, sum(nn_summ.input), sum(nn_summ.output) from nn_summ where " +
+                " n_summ.network_id in (select id from networks where client= ?) " +
+                " and nn_summ.dat > (select max(dat) from client_ntraffic) group by 1";
+        PreparedStatement pst = con.prepareStatement(sql);
+        pst.setInt(1, clientId);
+        final ResultSet set = pst.executeQuery();
+        Collection<AggregationRecord> result = new LinkedList<AggregationRecord>();
+        while(set.next()){
+           AggregationRecord ar = new AggregationRecord(clientId, set.getTimestamp(1), set.getLong(2), set.getLong(2));
+            result.add(ar);
+        }
+        set.close();
+        pst.close();
+        return result;
+    }
+
     public void doAggregation(){
+       //todo: the same for doAggregation(Date)
        String sql = "insert into client_ntraffic(client, dat, incoming, outcoming) " +
-               "select cl.id, nn_summ.dat, sum(nn_summ.input), sum(nn_summ.output) from cl, nn_summ where " +
-               "nn_summ.network_id in (select id from networks where client=cl.id) " +
-               "and nn_summ.dat > (select max(dat) from client_ntraffic) group by 1, 2";
+               "(?, ?, ?, ?)";
         String logStr = "doAggregation(): ";
         log.info(logStr + " <<<<");
         try{
-            PreparedStatement pstmt = con.prepareStatement(sql);
-            pstmt.executeUpdate();
-            pstmt.close();
+            List<Integer> clients = getNetworkedClients();
+            PreparedStatement pst = con.prepareStatement(sql);
+
+            for (Integer client : clients) {
+                Collection<AggregationRecord> records = askForData(client);
+                for (AggregationRecord record : records) {
+                    pst.setInt(1, record.getClientId());
+                    pst.setTimestamp(2, record.getStamp());
+                    pst.setLong(3, record.getInput());
+                    pst.setLong(4, record.getOutput());
+                    pst.addBatch();
+                }
+            }
+
+            pst.executeBatch();
+            pst.close();
         } catch (SQLException e) {
             log.error(logStr + " Aggregation error: " + e.getMessage());
             e.printStackTrace(System.err);
@@ -452,12 +482,20 @@ public class DatabaseProxy {
     private class AggregationRecord {
         private int clientId;
         private java.sql.Date date;
+        private java.sql.Timestamp stamp;
         private long input;
         private long output;
 
         public AggregationRecord(int clientId, java.sql.Date date, long input, long output) {
             this.clientId = clientId;
             this.date = date;
+            this.input = input;
+            this.output = output;
+        }
+
+        public AggregationRecord(int clientId, Timestamp date, long input, long output) {
+            this.clientId = clientId;
+            this.stamp = date;
             this.input = input;
             this.output = output;
         }
@@ -478,5 +516,12 @@ public class DatabaseProxy {
             return output;
         }
 
+        public Timestamp getStamp() {
+            return stamp;
+        }
+
+        public void setStamp(Timestamp stamp) {
+            this.stamp = stamp;
+        }
     }
 }
