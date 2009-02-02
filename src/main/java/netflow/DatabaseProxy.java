@@ -190,7 +190,7 @@ public class DatabaseProxy {
 
     public void doAggregation(){
        //todo: the same for doAggregation(Date)
-       String sql = "insert into client_ntraffic(client, dat, incoming, outcoming) " +
+       String sql = "insert into client_ntraffic(client, dat, incoming, outcoming) values " +
                "(?, ?, ?, ?)";
         String logStr = "doAggregation(): ";
         log.info(logStr + " <<<<");
