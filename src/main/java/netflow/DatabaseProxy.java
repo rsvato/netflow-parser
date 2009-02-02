@@ -228,7 +228,7 @@ public class DatabaseProxy {
         Timestamp start = Utils.getStartDate(date);
         Timestamp end = Utils.getEndDate(date);
         try{
-
+            //todo: optimize as per ticket #21
             String sql = "insert into client_ntraffic(client, dat, incoming, outcoming) " +
                    "select cl.id, nn_summ.dat, sum(nn_summ.input), sum(nn_summ.output) from cl, nn_summ where " +
                    "nn_summ.network_id in (select id from networks where client=cl.id) " +
