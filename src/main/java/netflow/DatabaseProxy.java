@@ -180,7 +180,7 @@ public class DatabaseProxy {
         final ResultSet set = pst.executeQuery();
         Collection<AggregationRecord> result = new LinkedList<AggregationRecord>();
         while(set.next()){
-           AggregationRecord ar = new AggregationRecord(clientId, set.getTimestamp(1), set.getLong(2), set.getLong(2));
+           AggregationRecord ar = new AggregationRecord(clientId, set.getTimestamp(1), set.getLong(2), set.getLong(3));
             result.add(ar);
         }
         set.close();
