@@ -36,6 +36,17 @@
                 </archive>
               </configuration>
             </plugin>
+            <plugin>
+                <groupId>com.mycila.maven-license-plugin</groupId>
+                <artifactId>maven-license-plugin</artifactId>
+                <configuration>
+                    <header>src/etc/header.txt</header>
+                    <includes>
+                         <include>src/**/*.java</include>
+                    </includes>
+                    <strictCheck>true</strictCheck>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
     <dependencies>
@@ -61,19 +72,6 @@
             <version>1.2.12</version>
         </dependency>
     </dependencies>
-    <reporting>
-        <plugins>
-            <plugin>
-                <artifactId>maven-pmd-plugin</artifactId>
-                <configuration>
-                    <linkXref>true</linkXref>
-                    <sourceEncoding>utf-8</sourceEncoding>
-                    <minimumTokens>100</minimumTokens>
-                    <targetJdk>1.5</targetJdk>
-                </configuration>
-            </plugin>
-        </plugins>
-    </reporting>
     <pluginRepositories>
         <pluginRepository>
               <id>mortbay-repo</id>
