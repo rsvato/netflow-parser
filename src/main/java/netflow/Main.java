@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2013 Svyatoslav Reyentenko <rsvato@gmail.com>
+ * Copyright (C) 2005-2013 rsvato <rsvato@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,16 +31,13 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-/**
- * @author slava
- */
 public class Main {
 
     private static final Log log = LogFactory.getLog(Main.class);
 
     /**
      * @param args the command line arguments
-     * @throws java.io.IOException when file not exists
+     * @throws java.io.IOException when netflow file not exists or no aggregation requested
      */
     public static void main(String[] args) throws IOException{
         if (args.length < 1) {

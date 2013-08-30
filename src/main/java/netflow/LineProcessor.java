@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2013 Svyatoslav Reyentenko <rsvato@gmail.com>
+ * Copyright (C) 2005-2013 rsvato <rsvato@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,6 @@ import java.util.List;
 import java.text.DateFormat;
 import java.text.ParsePosition;
 
-/**
- * User: slava
- * Date: 09.11.2006
- * Time: 22:58:46
- * Version: $Id$
- */
 public class LineProcessor {
     private List<NetworkDefinition> networks;
     private Map<String, NetworkDefinition> cache = new HashMap<String, NetworkDefinition>();

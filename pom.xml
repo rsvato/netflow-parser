@@ -5,7 +5,7 @@
     <artifactId>netflow</artifactId>
     <packaging>jar</packaging>
     <name>netflow-app</name>
-    <version>1.0</version>
+    <version>1.0.1</version>
     <url>http://ns2.paguo.net</url>
     <build>
         <plugins>
@@ -15,7 +15,6 @@
                     <source>1.5</source>
                     <target>1.5</target>
                     <encoding>UTF-8</encoding>
-                    <sourceEncoding>UTF-8</sourceEncoding>
                 </configuration>
             </plugin>
             <plugin>

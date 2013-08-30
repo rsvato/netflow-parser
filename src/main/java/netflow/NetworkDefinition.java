@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2013 Svyatoslav Reyentenko <rsvato@gmail.com>
+ * Copyright (C) 2005-2013 rsvato <rsvato@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,6 @@ import org.apache.commons.logging.LogFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-/**
- * @author slava
- * @version $Id $
- */
 public class NetworkDefinition {
     private Integer networkId;
     private InetAddress networkAddress;

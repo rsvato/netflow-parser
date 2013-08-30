@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2013 Svyatoslav Reyentenko <rsvato@gmail.com>
+ * Copyright (C) 2005-2013 rsvato <rsvato@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import java.net.UnknownHostException;
  */
 public class TestAddress extends TestCase{
     public void testAddressEquality(){
-        NetworkDefinition nd = new NetworkDefinition(new Integer(1), "10.0.4.0", "255.255.255.0");
+        NetworkDefinition nd = new NetworkDefinition(1, "10.0.4.0", "255.255.255.0");
         boolean s = nd.isMyAddress("10.0.4.128");
         assertTrue("Address must be ok", s);
     }
@@ -37,19 +37,19 @@ public class TestAddress extends TestCase{
     }
 
      public void testAddressEquality2(){
-        NetworkDefinition nd = new NetworkDefinition(new Integer(1), "10.0.4.0", "255.255.255.0", "10.0.5.128");
+        NetworkDefinition nd = new NetworkDefinition(1, "10.0.4.0", "255.255.255.0", "10.0.5.128");
         boolean s = nd.isMyAddress("10.0.5.128");
         assertTrue("Address must be ok", s);
     }
 
     public void testBrcast(){
-       NetworkDefinition nd = new NetworkDefinition(new Integer(1),  "10.0.4.0", "255.255.255.0", "10.0.5.128");
+       NetworkDefinition nd = new NetworkDefinition(1,  "10.0.4.0", "255.255.255.0", "10.0.5.128");
         boolean s = nd.isMyAddress("10.0.4.255");
         assertFalse("Broadcast cannot be in network", s);
     }
 
     public void testOneAddress(){
-       NetworkDefinition nd = new NetworkDefinition(new Integer(1),  "10.0.4.1", "255.255.255.255", "10.0.5.128");
+       NetworkDefinition nd = new NetworkDefinition(1,  "10.0.4.1", "255.255.255.255", "10.0.5.128");
         boolean s = nd.isMyAddress("10.0.4.1");
         assertTrue("Network can include only one address", s);
     }
