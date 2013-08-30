@@ -26,13 +26,11 @@ public class TestIPBase{
       String fileName = args[1];
       BufferedReader reader = new BufferedReader(new FileReader(fileName));
       String line;
-      LineProcessor processor = new LineProcessor();
+      LineProcessor processor = new LineProcessor(HostCache.getInstance());
       while ((line = reader.readLine()) != null) {
-          if (!line.startsWith("#")) {
-              if (line.indexOf(address) > -1) {
-                  System.err.println(line);
-                  processor.parseLine(line.split("\\s+"));
-              }
+          if (!line.startsWith("#") && line.contains(address)) {
+              System.err.println(line);
+              processor.parseLine(line.split("\\s+"));
           }
       }
   }

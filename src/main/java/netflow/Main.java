@@ -106,7 +106,9 @@ public class Main {
         }
         Date newDate = guard;
         log.info(last);
-        LineProcessor processor = new LineProcessor();
+
+        HostCache cache = HostCache.getInstance();
+        LineProcessor processor = new LineProcessor(cache);
         while ((line = reader.readLine()) != null) {
             if (!line.startsWith("#")) {
                 if (last.before(newDate) || processAllFile) {
@@ -118,11 +120,12 @@ public class Main {
                 }
             } else {
                 comments++;
+
                 if (line.startsWith("#Time")) {
                     newDate = LineProcessor.parseTime(line, df);
                     log.info("Saving hosts " + newDate);
                 }
-                HostCache cache = HostCache.getInstance();
+
                 if (line.startsWith("#EndData")
                         && !cache.isEmpty() && newDate != null && !newDate.equals(guard)) {
                     log.info("Saving hosts (finish processing) " + newDate);

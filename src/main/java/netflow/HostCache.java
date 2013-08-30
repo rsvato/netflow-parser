@@ -58,7 +58,6 @@ public class HostCache {
         DatabaseProxy proxy = DatabaseProxy.getInstance();
         proxy.saveHosts(cache, dat);
         cache = new HashMap<String, HostTraffic>();
-
     }
     
     public boolean isEmpty(){

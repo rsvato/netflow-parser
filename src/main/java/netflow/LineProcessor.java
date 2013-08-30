@@ -28,8 +28,10 @@ import java.text.ParsePosition;
 public class LineProcessor {
     private List<NetworkDefinition> networks;
     private Map<String, NetworkDefinition> cache = new HashMap<String, NetworkDefinition>();
+    private HostCache hostCache;
 
-    public LineProcessor(){
+    public LineProcessor(HostCache hostCache){
+        this.hostCache = hostCache;
         networks = DatabaseProxy.getInstance().getNetworks();
     }
 
@@ -49,17 +51,16 @@ public class LineProcessor {
             return; // internal traffic
         }*/
 
-        HostCache cache = HostCache.getInstance();
         if (output != null) {
-            cache.addInput(elements[3],
+            hostCache.addInput(elements[3],
                     new Long(elements[10]), output.getNetworkId());
-            cache.addOutput(elements[3],
+            hostCache.addOutput(elements[3],
                     new Long(elements[11]), output.getNetworkId());
         }
 
         if (input != null){
-            cache.addInput(elements[2], Long.decode(elements[11]), input.getNetworkId());
-            cache.addOutput(elements[2], Long.decode(elements[10]), input.getNetworkId());
+            hostCache.addInput(elements[2], Long.decode(elements[11]), input.getNetworkId());
+            hostCache.addOutput(elements[2], Long.decode(elements[10]), input.getNetworkId());
         }
     }
 
@@ -77,7 +78,7 @@ public class LineProcessor {
     }
 
     public NetworkDefinition netId(String address) {
-        NetworkDefinition result = null;
+        NetworkDefinition result;
         result = cache.get(address);
         if (result == null){
           for (NetworkDefinition network : networks) {
