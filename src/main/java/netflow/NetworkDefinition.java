@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2005-2013 rsvato <rsvato@gmail.com>
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,16 +22,16 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 public class NetworkDefinition {
-    private Integer networkId;
-    private InetAddress networkAddress;
-    private InetAddress netmask;
+    private static final Log log = LogFactory.getLog(NetworkDefinition.class);
+    private final Integer networkId;
+    private final InetAddress networkAddress;
+    private final InetAddress netmask;
+    private final String snetmask;
+    private final String saddress;
     private InetAddress returnAddress;
-    private String snetmask;
-    private String saddress;
     private long na;
     private long nm;
     private long broadcast;
-    private static final Log log = LogFactory.getLog(NetworkDefinition.class);
 
     public NetworkDefinition(Integer nid, String network, String netmask, String returnAd) {
         try {
@@ -58,80 +58,80 @@ public class NetworkDefinition {
         }
     }
 
+    public static long addrToLong(InetAddress address) {
+        byte[] rawIP = address.getAddress();
+        return convertToLong(rawIP);
+    }
+
+    public static long addrToLong(String addr) {
+        String pattern = ".";
+        int ind = 0;
+        int max = 4;
+        int cur = 0;
+        byte[] rawIp = new byte[4];
+        while ((ind = addr.indexOf(pattern)) != -1 && cur < max) {
+            rawIp[cur++] = (byte) Integer.parseInt(addr.substring(0, ind));
+            addr = addr.substring(ind + 1);
+            if (addr.indexOf(pattern) == -1) {
+                rawIp[cur++] = (byte) Integer.parseInt(addr);
+            }
+        }
+        return convertToLong(rawIp);
+    }
+
+    private static long convertToLong(byte[] rawIP) {
+        return ((rawIP[0] & 0xff) << 24 | (rawIP[1] & 0xff) << 16 |
+                (rawIP[2] & 0xff) << 8 | (rawIP[3] & 0xff)) & 0xffffffffL;
+    }
+
     public boolean isMyAddress(String address) {
         boolean result = false;
-        if ("255.255.255.255".equals(snetmask)){
-                return saddress.equals(address);
+        if ("255.255.255.255".equals(snetmask)) {
+            return saddress.equals(address);
         }
 
-        if (address == null || saddress == null){ // at least first octet
-                return false;
+        if (address == null || saddress == null) { // at least first octet
+            return false;
         }
 
-        if (address.equals(saddress)){
-                return true;
+        if (address.equals(saddress)) {
+            return true;
         }
 
-        if (! saddress.startsWith(address.substring(0, address.indexOf(".")))){ //first octet
-                return false;
+        if (!saddress.startsWith(address.substring(0, address.indexOf(".")))) { //first octet
+            return false;
         }
-        
+
         try {
-                if (! result){
-            //InetAddress foreign = InetAddress.getByName(address);
-            if (na == 0) {
-                na = addrToLong(networkAddress);
-            }
-            if (nm == 0) {
-                nm = addrToLong(netmask);
-            }
-            long fa = addrToLong(address);
-            if ((na & nm) == (fa & nm)) {
-                if (getBroadcastAddress() == fa) {
-                    result = getBroadcastAddress() == na; // say, 10.0.4.1/32 - very rare and illegal, but used
-                } else {
-                    result = true;
+            if (!result) {
+                //InetAddress foreign = InetAddress.getByName(address);
+                if (na == 0) {
+                    na = addrToLong(networkAddress);
                 }
-            }
-            if (returnAddress != null && ! result){
+                if (nm == 0) {
+                    nm = addrToLong(netmask);
+                }
+                long fa = addrToLong(address);
+                if ((na & nm) == (fa & nm)) {
+                    if (getBroadcastAddress() == fa) {
+                        result = getBroadcastAddress() == na; // say, 10.0.4.1/32 - very rare and illegal, but used
+                    } else {
+                        result = true;
+                    }
+                }
+                if (returnAddress != null && !result) {
                     result = fa == addrToLong(returnAddress);
-            }
                 }
+            }
         } catch (Exception e) {
             log.error("Bad host: " + e.getMessage());
         }
         return result;
     }
 
-    public static long addrToLong(InetAddress address) {
-        byte[] rawIP = address.getAddress();
-        return convertToLong(rawIP);
-    }
-
-    public static long addrToLong(String addr){
-        String pattern = ".";
-        int ind = 0;
-        int max = 4;
-        int cur = 0;
-        byte[] rawIp = new byte[4];
-        while ((ind = addr.indexOf(pattern)) != -1 && cur < max){
-           rawIp[cur++] = (byte) Integer.parseInt(addr.substring(0, ind));
-           addr = addr.substring(ind + 1);
-           if (addr.indexOf(pattern) == -1){
-                rawIp[cur++] = (byte) Integer.parseInt(addr);
-           }
-       }
-       return convertToLong(rawIp);
-    }
-
-    private static long convertToLong(byte[] rawIP) {
-        return ((rawIP[0] & 0xff) << 24 | (rawIP[1] & 0xff) << 16 |
-           (rawIP[2] & 0xff) << 8 | (rawIP[3] & 0xff)) & 0xffffffffL;
-    }
-
     private long getBroadcastAddress() {
         if (broadcast == 0) {
-                broadcast = ((na | (~(nm) & 0xff)));
+            broadcast = ((na | (~(nm) & 0xff)));
         }
         return broadcast;
     }
@@ -145,7 +145,7 @@ public class NetworkDefinition {
         return networkId;
     }
 
-    public String toString(){
+    public String toString() {
         return networkId + ". [address=" + networkAddress + "; mask=" + netmask + "]";
     }
 
@@ -161,7 +161,7 @@ public class NetworkDefinition {
         if (!networkId.equals(that.networkId)) return false;
         return !(returnAddress != null ? !returnAddress.equals(that.returnAddress) : that.returnAddress != null);
 
-        }
+    }
 
     public int hashCode() {
         int result;

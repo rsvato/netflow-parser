@@ -16,15 +16,13 @@
 package netflow;
 
 class HostTraffic {
-    private String hostAddress;
+    private final String hostAddress;
     private long inputBytes;
     private long outputBytes;
-    private Integer networkId;
+    private final Integer networkId;
 
     public HostTraffic(String hostAddress, Integer networkId) {
         this.hostAddress = hostAddress;
-        this.inputBytes = 0;
-        this.outputBytes = 0;
         this.networkId = networkId;
     }
 

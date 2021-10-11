@@ -13,10 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * @author slava
- * @version $Id $
- */
 package netflow;
 
 import java.io.InputStream;
@@ -30,19 +26,18 @@ import java.io.IOException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public class DatabaseProxy {
-    private Connection con;
-    private static DatabaseProxy ourInstance = new DatabaseProxy();
+public final class DatabaseProxy {
+    private final Connection con;
     private static final Log log = LogFactory.getLog(DatabaseProxy.class);
     private static final String CONFIGURATION = "configuration";
-    private Properties queries = new Properties();
-    private Properties connectionProps = new Properties();
+    private final Properties queries = new Properties();
 
     private static final String queriesFile = "/sql/psql-queries.properties";
     private static final String defaultDb = "/config/psql-default.properties";
 
     public DatabaseProxy() {
         try {
+            Properties connectionProps = new Properties();
             try {
                 connectionProps = readFileProperties();
             } catch(IOException e) {
@@ -51,7 +46,6 @@ public class DatabaseProxy {
             if (connectionProps.isEmpty()) {
                 connectionProps = fillDefaultProperties();
             }
-            queries = new Properties();
             InputStream in = getClass().getResourceAsStream(queriesFile);
             queries.load(in);
             con = createConnection(connectionProps);
@@ -95,17 +89,9 @@ public class DatabaseProxy {
         return props;
     }
 
-    public static DatabaseProxy getInstance() {
-        if (ourInstance == null){
-            ourInstance = new DatabaseProxy();
-        }
-        return ourInstance;
-    }
-
-
     public List<NetworkDefinition> getNetworks() {
         String sql = getQuery("network.list.get");
-        List<NetworkDefinition> tmp = new ArrayList<NetworkDefinition>();
+        List<NetworkDefinition> tmp = new ArrayList<>();
         try {
             PreparedStatement pstmt = con.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
@@ -149,19 +135,16 @@ public class DatabaseProxy {
         String sql = getQuery("max.date.get");
         try{
             PreparedStatement pstmt = con.prepareStatement(sql);
-            result = doWithStatement(pstmt, new ResultSetProcessor<Date>() {
-                @Override
-                public Date process(ResultSet rs) throws SQLException {
-                    java.util.Date result = null;
-                    if (rs.next()){
-                        Timestamp t = rs.getTimestamp(1);
-                        if (t != null){
-                            result = new java.util.Date();
-                            result.setTime(t.getTime());
-                        }
+            result = doWithStatement(pstmt, rs -> {
+                Date result1 = null;
+                if (rs.next()){
+                    Timestamp t = rs.getTimestamp(1);
+                    if (t != null){
+                        result1 = new Date();
+                        result1.setTime(t.getTime());
                     }
-                    return result;
                 }
+                return result1;
             });
         }catch(SQLException e){
             log.error(e);
@@ -210,16 +193,13 @@ public class DatabaseProxy {
         String sql = getQuery("aggregations.get");
         PreparedStatement pst = con.prepareStatement(sql);
         pst.setInt(1, clientId);
-        return doWithStatement(pst, new ResultSetProcessor<Collection<AggregationRecord>>() {
-            @Override
-            public Collection<AggregationRecord> process(ResultSet set) throws SQLException {
-                Collection<AggregationRecord> result = new LinkedList<AggregationRecord>();
-                while(set.next()){
-                    AggregationRecord ar = new AggregationRecord(clientId, set.getTimestamp(1), set.getLong(2), set.getLong(3));
-                    result.add(ar);
-                }
-                return result;
+        return doWithStatement(pst, set -> {
+            Collection<AggregationRecord> result = new LinkedList<>();
+            while(set.next()){
+                AggregationRecord ar = new AggregationRecord(clientId, set.getTimestamp(1), set.getLong(2), set.getLong(3));
+                result.add(ar);
             }
+            return result;
         });
     }
 
@@ -295,14 +275,11 @@ public class DatabaseProxy {
             pst.setTimestamp(2, end);
             pst.setInt(3, client);
 
-            result = doWithStatement(pst, new ResultSetProcessor<Timestamp>() {
-                @Override
-                public Timestamp process(ResultSet rs) throws SQLException {
-                    if (rs.next())
-                        return rs.getTimestamp(1);
-                    else
-                        return null;
-                }
+            result = doWithStatement(pst, rs -> {
+                if (rs.next())
+                    return rs.getTimestamp(1);
+                else
+                    return null;
             });
 
         } catch (SQLException e){
@@ -325,12 +302,7 @@ public class DatabaseProxy {
             pstmt.setTimestamp(1, dat);
             pstmt.setString(2, host);
             pstmt.setInt(3, networkId);
-            return doWithStatement(pstmt, new ResultSetProcessor<Boolean>() {
-                @Override
-                public Boolean process(ResultSet rs) throws SQLException {
-                    return rs.next();
-                }
-            });
+            return doWithStatement(pstmt, ResultSet::next);
         } catch (SQLException e) {
             log.error("Query failed: " + e.getMessage());
         }
@@ -341,42 +313,39 @@ public class DatabaseProxy {
         log.debug("doDailyAggregation(): <<<<");
         try{
             List<AggregationRecord> results = getAggregationResults();
-            List<AggregationRecord> toInsert = new ArrayList<AggregationRecord>();
-            List<AggregationRecord> toUpdate = new ArrayList<AggregationRecord>();
-            for (AggregationRecord result : results) {
-               if (aggregationAlreadyStored(result)){
-                   toUpdate.add(result);
-               }else{
-                   toInsert.add(result);
-               }
-            }
-            addAggregationResults(toInsert);
-            updateAggregationResults(toUpdate);
-       } catch (SQLException e) {
+            aggregateResults(results);
+        } catch (SQLException e) {
            log.error("Query falied: " + e.getMessage());
        }
         log.debug("doDailyAggregation(): >>>>");
     }
 
     public void doDailyAggregation(Date d){
+        if (d == null) {
+            doDailyAggregation();
+        }
         log.debug("doDailyAggregation(): <<<<");
         try{
             List<AggregationRecord> results = getAggregationResults(d);
-            List<AggregationRecord> toInsert = new ArrayList<AggregationRecord>();
-            List<AggregationRecord> toUpdate = new ArrayList<AggregationRecord>();
-            for (AggregationRecord result : results) {
-               if (aggregationAlreadyStored(result)){
-                   toUpdate.add(result);
-               }else{
-                   toInsert.add(result);
-               }
-            }
-            addAggregationResults(toInsert);
-            updateAggregationResults(toUpdate);
-       } catch (SQLException e) {
+            aggregateResults(results);
+        } catch (SQLException e) {
            log.error("Query falied: " + e.getMessage());
        }
         log.debug("doDailyAggregation(): >>>>");
+    }
+
+    private void aggregateResults(List<AggregationRecord> results) throws SQLException {
+        List<AggregationRecord> toInsert = new ArrayList<>();
+        List<AggregationRecord> toUpdate = new ArrayList<>();
+        for (AggregationRecord result : results) {
+            if (aggregationAlreadyStored(result)) {
+                toUpdate.add(result);
+            } else {
+                toInsert.add(result);
+            }
+        }
+        addAggregationResults(toInsert);
+        updateAggregationResults(toUpdate);
     }
 
     private void updateAggregationResults(List<AggregationRecord> records) throws SQLException {
@@ -428,7 +397,7 @@ public class DatabaseProxy {
 
         PreparedStatement ps = con.prepareStatement(collect);
 
-        List<AggregationRecord> results = new ArrayList<AggregationRecord>();
+        List<AggregationRecord> results = new ArrayList<>();
         for (Integer id : clients){
           ps.setInt(1, id);
           ResultSet rs = ps.executeQuery();
@@ -446,15 +415,12 @@ public class DatabaseProxy {
         log.debug("Getting user list");
         String unq = getQuery("clients.ids.get");
         PreparedStatement pst = con.prepareStatement(unq);
-        return doWithStatement(pst, new ResultSetProcessor<List<Integer>>() {
-            @Override
-            public List<Integer> process(ResultSet rs) throws SQLException {
-                List<Integer> clients = new ArrayList<Integer>();
-                while (rs.next()) {
-                    clients.add(rs.getInt(1));
-                }
-                return clients;
+        return doWithStatement(pst, rs -> {
+            List<Integer> clients = new ArrayList<Integer>();
+            while (rs.next()) {
+                clients.add(rs.getInt(1));
             }
+            return clients;
         });
     }
 
@@ -473,7 +439,7 @@ public class DatabaseProxy {
         String collect = getQuery("aggregations.forday.get");
         PreparedStatement ps = con.prepareStatement(collect);
 
-        final List<AggregationRecord> results = new ArrayList<AggregationRecord>();
+        final List<AggregationRecord> results = new ArrayList<>();
         for (Integer id : clients){
             ps.setTimestamp(1, start);
             ps.setTimestamp(2, end);
@@ -495,12 +461,7 @@ public class DatabaseProxy {
         PreparedStatement ps = con.prepareStatement(query);
         ps.setInt(1, record.getClientId());
         ps.setDate(2, record.getDate());
-        return doWithStatement(ps, new ResultSetProcessor<Boolean>() {
-            @Override
-            public Boolean process(ResultSet rs) throws SQLException {
-                return rs.first();
-            }
-        });
+        return doWithStatement(ps, ResultSet::first);
     }
 
     private<T> T doWithStatement(PreparedStatement statement, ResultSetProcessor<T> processor) throws SQLException {

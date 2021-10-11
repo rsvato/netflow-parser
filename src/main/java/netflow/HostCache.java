@@ -13,10 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * @author slava
- * @version $Id $
- */
 package netflow;
 
 import java.util.Date;
@@ -24,14 +20,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class HostCache {
-    private static HostCache ourInstance = new HostCache();
+    private final DatabaseProxy db;
     private Map<String, HostTraffic> cache;
-    public static HostCache getInstance() {
-        return ourInstance;
-    }
 
-    private HostCache() {
-        this.cache = new HashMap<String, HostTraffic>();
+    public HostCache(DatabaseProxy db) {
+        this.db = db;
+        this.cache = new HashMap<>();
     }
 
     public void addInput(String host, long bytes, Integer networkId){
@@ -54,10 +48,11 @@ public class HostCache {
         return result;
     }
 
-    public void save(Date dat){
-        DatabaseProxy proxy = DatabaseProxy.getInstance();
-        proxy.saveHosts(cache, dat);
-        cache = new HashMap<String, HostTraffic>();
+    public void save(Date date){
+        if (db != null) {
+            db.saveHosts(cache, date);
+            cache = new HashMap<>();
+        }
     }
     
     public boolean isEmpty(){

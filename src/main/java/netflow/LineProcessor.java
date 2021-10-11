@@ -26,13 +26,13 @@ import java.text.DateFormat;
 import java.text.ParsePosition;
 
 public class LineProcessor {
-    private List<NetworkDefinition> networks;
-    private Map<String, NetworkDefinition> cache = new HashMap<String, NetworkDefinition>();
-    private HostCache hostCache;
+    private final List<NetworkDefinition> networks;
+    private final Map<String, NetworkDefinition> cache = new HashMap<>();
+    private final HostCache hostCache;
 
-    public LineProcessor(HostCache hostCache){
+    public LineProcessor(HostCache hostCache, List<NetworkDefinition> networks){
         this.hostCache = hostCache;
-        networks = DatabaseProxy.getInstance().getNetworks();
+        this.networks = networks;
     }
 
     public static Date parseTime(String line, DateFormat df) {

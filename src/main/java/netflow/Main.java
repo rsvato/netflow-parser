@@ -1,22 +1,17 @@
 /**
  * Copyright (C) 2005-2013 rsvato <rsvato@gmail.com>
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-/*
- * Main.java
- *
- * Created on 21 Март 2005 г., 11:17
  */
 
 package netflow;
@@ -39,66 +34,56 @@ public class Main {
      * @param args the command line arguments
      * @throws java.io.IOException when netflow file not exists or no aggregation requested
      */
-    public static void main(String[] args) throws IOException{
+    public static void main(String[] args) throws IOException {
         if (args.length < 1) {
-            System.err.println("Usage: netflow.Main <filename>");
+            System.err.println("Usage: netflow.Main <filename> or netflow.Main -aggreg yyyy-MM-dd");
             System.exit(1);
         }
 
-        if ("-aggreg".equals(args[0])){
-            if (args.length < 2){
-               System.err.println("Usage: netflow.Main -aggreg yyyy-MM-dd");
+        DatabaseProxy dbProxy = new DatabaseProxy();
+        if ("-aggreg".equals(args[0])) {
+            if (args.length < 2) {
+                System.err.println("Usage: netflow.Main -aggreg yyyy-MM-dd");
                 System.exit(1);
             }
-            String date = args[1];
-            Date d = Utils.parseArgument(date);
-            DatabaseProxy.getInstance().doAggregation(d);
-            DatabaseProxy.getInstance().doDailyAggregation(d);
-            return;
-        }
+            doAggregation(Utils.parseArgument(args[1]), dbProxy);
+        } else {
+            String fileName = args[0];
 
-        String fileName = args[0];
-        String property = "false";
-        StringTokenizerParser p = new StringTokenizerParser();
-        try {
-            property = System.getProperty("process.all");
-        } catch (NullPointerException e) {
-            log.info("Variable not defined. Assuming to false");
-        }
-        boolean processAllFile = Boolean.valueOf(property);
+            StringTokenizerParser p = new StringTokenizerParser();
+            String property = System.getProperty("process.all", "false");
+            boolean processAllFile = Boolean.parseBoolean(property);
+            long now = importFile(dbProxy, fileName, processAllFile);
 
-        String ag = "true";
-        try {
-            ag = System.getProperty("netflow.doAggregation");
-        } catch (NullPointerException e) {
-            log.info("Variable not defined. Will do full aggregation for current date");
+            String ag =  System.getProperty("netflow.doAggregation", "true");
+            boolean doAggregation = Boolean.parseBoolean(ag);
+            if (doAggregation) {
+                doAggregation(null, dbProxy);
+            }
+            now = System.currentTimeMillis() - now;
+            log.info("Total processing: " + now + " ms");
         }
-        boolean doAggregation = Boolean.valueOf(ag);
-
-        long now = importFile(fileName, p, processAllFile);
-        if (doAggregation) {
-            DatabaseProxy.getInstance().doAggregation();
-            DatabaseProxy.getInstance().doDailyAggregation();
-        }
-        DatabaseProxy.getInstance().close();
-        now = System.currentTimeMillis() - now;
-        log.info("Total processing: " + now + " ms");
-
+        dbProxy.close();
     }
 
-    private static long importFile(String fileName, StringTokenizerParser p, boolean processAllFile) throws IOException {
+    private static void doAggregation(Date date, DatabaseProxy dbProxy) {
+        dbProxy.doAggregation(date);
+        dbProxy.doDailyAggregation(date);
+    }
+
+    private static long importFile(DatabaseProxy dbProxy, String fileName, boolean processAllFile) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(fileName));
+        StringTokenizerParser p = new StringTokenizerParser();
         int lines = 0;
         int comments = 0;
         int goodLines = 0;
         int oldlines = 0;
         String line;
-        DateFormat df = new SimpleDateFormat("HH:mm:ss EEE dd MMM yyyy",
-                Locale.ENGLISH);
+        DateFormat df = new SimpleDateFormat("HH:mm:ss EEE dd MMM yyyy", Locale.ENGLISH);
         long now = System.currentTimeMillis();
         Date guard = new Date();
         log.info("Begin process " + guard);
-        Date last = DatabaseProxy.getInstance().getMaxDate();
+        Date last = dbProxy.getMaxDate();
         if (last == null) {
             log.info("Date empty. Creating a new one");
             last = new Date();
@@ -107,8 +92,8 @@ public class Main {
         Date newDate = guard;
         log.info(last);
 
-        HostCache cache = HostCache.getInstance();
-        LineProcessor processor = new LineProcessor(cache);
+        HostCache cache = new HostCache(dbProxy);
+        LineProcessor processor = new LineProcessor(cache, dbProxy.getNetworks());
         while ((line = reader.readLine()) != null) {
             if (!line.startsWith("#")) {
                 if (last.before(newDate) || processAllFile) {
@@ -139,15 +124,16 @@ public class Main {
     }
 
 }
+
 class StringTokenizerParser {
-        public String[] parseLine(String s){
-           StringTokenizer st = new StringTokenizer(s, " ");
-           int size = st.countTokens();
-           String[] result = new String[size];
-           int i = 0;
-           while (st.hasMoreTokens()){
-              result[i++] = st.nextToken();
-           }
-           return result;
+    public String[] parseLine(String s) {
+        StringTokenizer st = new StringTokenizer(s, " ");
+        int size = st.countTokens();
+        String[] result = new String[size];
+        int i = 0;
+        while (st.hasMoreTokens()) {
+            result[i++] = st.nextToken();
         }
+        return result;
+    }
 }

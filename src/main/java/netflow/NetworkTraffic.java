@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2005-2013 rsvato <rsvato@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,14 +16,12 @@
 package netflow;
 
 class NetworkTraffic {
-    private Integer networkId;
+    private final Integer networkId;
     private long inputBytes;
     private long outputBytes;
 
     public NetworkTraffic(Integer networkId) {
         this.networkId = networkId;
-        this.inputBytes = 0;
-        this.outputBytes = 0;
     }
 
     public void addInput(long bytes){

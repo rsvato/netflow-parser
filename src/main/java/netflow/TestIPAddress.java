@@ -15,6 +15,8 @@
  */
 package netflow;
 
+import java.util.Collections;
+
 public class TestIPAddress{
     public static void main(String[] args){
         if (args.length != 1){
@@ -22,7 +24,7 @@ public class TestIPAddress{
             System.exit(1);
         }
         String ipToTest = args[0];
-        LineProcessor processor = new LineProcessor(HostCache.getInstance());
+        LineProcessor processor = new LineProcessor(new HostCache(null), Collections.emptyList());
         NetworkDefinition def = processor.netId(ipToTest);
         if (def != null){
             System.out.println(def);

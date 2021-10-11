@@ -15,6 +15,7 @@
  */
 package netflow;
 import java.io.*;
+import java.util.Collections;
 
 public class TestIPBase{
   public static void main(String[] args) throws IOException{
@@ -26,7 +27,7 @@ public class TestIPBase{
       String fileName = args[1];
       BufferedReader reader = new BufferedReader(new FileReader(fileName));
       String line;
-      LineProcessor processor = new LineProcessor(HostCache.getInstance());
+      LineProcessor processor = new LineProcessor(new HostCache(null), Collections.emptyList());
       while ((line = reader.readLine()) != null) {
           if (!line.startsWith("#") && line.contains(address)) {
               System.err.println(line);
