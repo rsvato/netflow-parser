@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2005-2013 rsvato <rsvato@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,8 @@ public class TestIPAddress{
             System.exit(1);
         }
         String ipToTest = args[0];
-        LineProcessor processor = new LineProcessor(new HostCache(null), Collections.emptyList());
+        DatabaseProxy databaseProxy = new DatabaseProxy();
+        LineProcessor processor = new LineProcessor(new HostCache(databaseProxy), databaseProxy.getNetworks());
         NetworkDefinition def = processor.netId(ipToTest);
         if (def != null){
             System.out.println(def);

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2005-2013 rsvato <rsvato@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,8 @@ public class TestIPBase{
       String fileName = args[1];
       BufferedReader reader = new BufferedReader(new FileReader(fileName));
       String line;
-      LineProcessor processor = new LineProcessor(new HostCache(null), Collections.emptyList());
+      DatabaseProxy databaseProxy = new DatabaseProxy();
+      LineProcessor processor = new LineProcessor(new HostCache(databaseProxy), databaseProxy.getNetworks());
       while ((line = reader.readLine()) != null) {
           if (!line.startsWith("#") && line.contains(address)) {
               System.err.println(line);
