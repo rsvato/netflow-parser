@@ -91,20 +91,13 @@ public final class DatabaseProxy {
 
     public List<NetworkDefinition> getNetworks() {
         String sql = getQuery("network.list.get");
-        List<NetworkDefinition> tmp = new ArrayList<>();
         try {
             PreparedStatement pstmt = con.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                NetworkDefinition nd = new NetworkDefinition(rs.getInt(4), rs.getString(1), rs.getString(2), rs.getString(3));
-                tmp.add(nd);
-            }
-            rs.close();
-            pstmt.close();
+            return doForEach(pstmt, rs -> new NetworkDefinition(rs.getInt(4), rs.getString(1),
+                    rs.getString(2), rs.getString(3)));
         } catch (SQLException e) {
             throw new Error(e);
         }
-        return tmp;
     }
 
     public void saveNetworks(Map cache, java.util.Date dat) {
@@ -131,24 +124,23 @@ public final class DatabaseProxy {
     }
 
     public java.util.Date getMaxDate(){
-        java.util.Date result = null;
+        Date result = null;
         String sql = getQuery("max.date.get");
         try{
             PreparedStatement pstmt = con.prepareStatement(sql);
             result = doWithStatement(pstmt, rs -> {
-                Date result1 = null;
+                Date r = null;
                 if (rs.next()){
                     Timestamp t = rs.getTimestamp(1);
                     if (t != null){
-                        result1 = new Date();
-                        result1.setTime(t.getTime());
+                        r = new Date();
+                        r.setTime(t.getTime());
                     }
                 }
-                return result1;
+                return r;
             });
         }catch(SQLException e){
             log.error(e);
-            e.printStackTrace();
         }
         return result;
     }
@@ -193,14 +185,8 @@ public final class DatabaseProxy {
         String sql = getQuery("aggregations.get");
         PreparedStatement pst = con.prepareStatement(sql);
         pst.setInt(1, clientId);
-        return doWithStatement(pst, set -> {
-            Collection<AggregationRecord> result = new LinkedList<>();
-            while(set.next()){
-                AggregationRecord ar = new AggregationRecord(clientId, set.getTimestamp(1), set.getLong(2), set.getLong(3));
-                result.add(ar);
-            }
-            return result;
-        });
+        return doForEach(pst, set -> new AggregationRecord(clientId, set.getTimestamp(1),
+                set.getLong(2), set.getLong(3)));
     }
 
     public void doAggregation(){
@@ -481,6 +467,28 @@ public final class DatabaseProxy {
         }
     }
 
+    private<T> List<T> doForEach(PreparedStatement statement, ResultSetProcessor<T> processor) throws SQLException {
+        List<T> result = new ArrayList<>();
+        ResultSet rs = null;
+        try {
+            rs = statement.executeQuery();
+            while (rs.next()) {
+                result.add(processor.process(rs));
+            }
+        } finally {
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+                statement.close();
+
+            } catch (SQLException e) {
+                log.error("SQL Exception while cleaning resources", e);
+            }
+        }
+        return result;
+    }
+
     public void close(){
         try{
             con.close();
@@ -489,12 +497,12 @@ public final class DatabaseProxy {
         }
     }
 
-    private class AggregationRecord {
-        private int clientId;
+    private static class AggregationRecord {
+        private final int clientId;
         private java.sql.Date date;
         private java.sql.Timestamp stamp;
-        private long input;
-        private long output;
+        private final long input;
+        private final long output;
 
         public AggregationRecord(int clientId, java.sql.Date date, long input, long output) {
             this.clientId = clientId;
@@ -530,9 +538,6 @@ public final class DatabaseProxy {
             return stamp;
         }
 
-        public void setStamp(Timestamp stamp) {
-            this.stamp = stamp;
-        }
     }
 
     interface ResultSetProcessor<T> {
