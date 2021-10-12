@@ -53,28 +53,15 @@ public class LineProcessor {
 
         if (output != null) {
             hostCache.addInput(elements[3],
-                    new Long(elements[10]), output.getNetworkId());
+                    Long.parseLong(elements[10]), output.getNetworkId());
             hostCache.addOutput(elements[3],
-                    new Long(elements[11]), output.getNetworkId());
+                    Long.parseLong(elements[11]), output.getNetworkId());
         }
 
         if (input != null){
-            hostCache.addInput(elements[2], Long.decode(elements[11]), input.getNetworkId());
-            hostCache.addOutput(elements[2], Long.decode(elements[10]), input.getNetworkId());
+            hostCache.addInput(elements[2], Long.parseLong(elements[11]), input.getNetworkId());
+            hostCache.addOutput(elements[2], Long.parseLong(elements[10]), input.getNetworkId());
         }
-    }
-
-    protected Set<NetworkDefinition> intersection(Set<NetworkDefinition> setx,
-                                                      Set<NetworkDefinition> sety){
-        Set<NetworkDefinition> result = new HashSet<NetworkDefinition>();
-        for (NetworkDefinition o : setx) {
-            for (NetworkDefinition o1 : sety) {
-               if (o1.getNetworkId().equals(o.getNetworkId())){
-                   result.add(o1);
-               }
-            }
-        }
-        return result;
     }
 
     public NetworkDefinition netId(String address) {
