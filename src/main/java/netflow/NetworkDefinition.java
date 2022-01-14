@@ -15,22 +15,24 @@
  */
 package netflow;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 public class NetworkDefinition {
-    private static final Log log = LogFactory.getLog(NetworkDefinition.class);
+    private static final Logger log = LoggerFactory.getLogger(NetworkDefinition.class);
+
     private final Integer networkId;
     private final InetAddress networkAddress;
     private final InetAddress netmask;
     private final String snetmask;
     private final String saddress;
     private InetAddress returnAddress;
-    private long na;
-    private long nm;
+    private long addressAsLong;
+    private long maskAsLong;
     private long broadcast;
 
     public NetworkDefinition(Integer nid, String network, String netmask, String returnAd) {
@@ -65,14 +67,13 @@ public class NetworkDefinition {
 
     public static long addrToLong(String addr) {
         String pattern = ".";
-        int ind = 0;
+        int ind, cur = 0;
         int max = 4;
-        int cur = 0;
         byte[] rawIp = new byte[4];
         while ((ind = addr.indexOf(pattern)) != -1 && cur < max) {
             rawIp[cur++] = (byte) Integer.parseInt(addr.substring(0, ind));
             addr = addr.substring(ind + 1);
-            if (addr.indexOf(pattern) == -1) {
+            if (!addr.contains(pattern)) {
                 rawIp[cur++] = (byte) Integer.parseInt(addr);
             }
         }
@@ -80,7 +81,7 @@ public class NetworkDefinition {
     }
 
     private static long convertToLong(byte[] rawIP) {
-        return ((rawIP[0] & 0xff) << 24 | (rawIP[1] & 0xff) << 16 |
+        return ((long) (rawIP[0] & 0xff) << 24 | (rawIP[1] & 0xff) << 16 |
                 (rawIP[2] & 0xff) << 8 | (rawIP[3] & 0xff)) & 0xffffffffL;
     }
 
@@ -103,42 +104,40 @@ public class NetworkDefinition {
         }
 
         try {
-            if (!result) {
-                //InetAddress foreign = InetAddress.getByName(address);
-                if (na == 0) {
-                    na = addrToLong(networkAddress);
-                }
-                if (nm == 0) {
-                    nm = addrToLong(netmask);
-                }
-                long fa = addrToLong(address);
-                if ((na & nm) == (fa & nm)) {
-                    if (getBroadcastAddress() == fa) {
-                        result = getBroadcastAddress() == na; // say, 10.0.4.1/32 - very rare and illegal, but used
-                    } else {
-                        result = true;
-                    }
-                }
-                if (returnAddress != null && !result) {
-                    result = fa == addrToLong(returnAddress);
+            //InetAddress foreign = InetAddress.getByName(address);
+            if (addressAsLong == 0) {
+                addressAsLong = addrToLong(networkAddress);
+            }
+            if (maskAsLong == 0) {
+                maskAsLong = addrToLong(netmask);
+            }
+            long fa = addrToLong(address);
+            if ((addressAsLong & maskAsLong) == (fa & maskAsLong)) {
+                if (getBroadcastAddress() == fa) {
+                    result = getBroadcastAddress() == addressAsLong; // say, 10.0.4.1/32 - very rare and illegal, but used
+                } else {
+                    result = true;
                 }
             }
+            if (returnAddress != null && !result) {
+                result = fa == addrToLong(returnAddress);
+            }
         } catch (Exception e) {
-            log.error("Bad host: " + e.getMessage());
+            log.error("Bad host: {}", address, e);
         }
         return result;
     }
 
     private long getBroadcastAddress() {
         if (broadcast == 0) {
-            broadcast = ((na | (~(nm) & 0xff)));
+            broadcast = ((addressAsLong | (~(maskAsLong) & 0xff)));
         }
         return broadcast;
     }
 
     private InetAddress getReadableBroadcast() throws UnknownHostException {
-        Long addr = getBroadcastAddress();
-        return InetAddress.getByName(addr.toString());
+        long addr = getBroadcastAddress();
+        return InetAddress.getByName(String.valueOf(addr));
     }
 
     public Integer getNetworkId() {

@@ -15,6 +15,9 @@
  */
 package netflow;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.InputStream;
 import java.sql.*;
 import java.util.*;
@@ -23,12 +26,10 @@ import java.io.FileInputStream;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 public final class DatabaseProxy {
     private final Connection con;
-    private static final Log log = LogFactory.getLog(DatabaseProxy.class);
+    private static final Logger log = LoggerFactory.getLogger(DatabaseProxy.class);
     private static final String CONFIGURATION = "configuration";
     private final Properties queries = new Properties();
 
@@ -41,7 +42,7 @@ public final class DatabaseProxy {
             try {
                 connectionProps = readFileProperties();
             } catch(IOException e) {
-                log.warn("Cannot read properties from file " + CONFIGURATION);
+                log.warn("Cannot read properties from file {}", CONFIGURATION);
             }
             if (connectionProps.isEmpty()) {
                 connectionProps = fillDefaultProperties();
@@ -100,7 +101,7 @@ public final class DatabaseProxy {
         }
     }
 
-    public void saveNetworks(Map cache, java.util.Date dat) {
+    public void saveNetworks(Map<?,?> cache, java.util.Date dat) {
         if (cache.size() == 0) {
             log.debug("Nothing to save");
             return;
@@ -140,7 +141,7 @@ public final class DatabaseProxy {
                 return r;
             });
         }catch(SQLException e){
-            log.error(e);
+            log.error("Error getting max date", e);
         }
         return result;
     }
@@ -402,7 +403,7 @@ public final class DatabaseProxy {
         String unq = getQuery("clients.ids.get");
         PreparedStatement pst = con.prepareStatement(unq);
         return doWithStatement(pst, rs -> {
-            List<Integer> clients = new ArrayList<Integer>();
+            List<Integer> clients = new ArrayList<>();
             while (rs.next()) {
                 clients.add(rs.getInt(1));
             }

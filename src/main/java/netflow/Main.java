@@ -16,8 +16,9 @@
 
 package netflow;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -28,7 +29,7 @@ import java.util.*;
 
 public class Main {
 
-    private static final Log log = LogFactory.getLog(Main.class);
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
 
     /**
      * @param args the command line arguments
@@ -50,7 +51,6 @@ public class Main {
         } else {
             String fileName = args[0];
 
-            StringTokenizerParser p = new StringTokenizerParser();
             String property = System.getProperty("process.all", "false");
             boolean processAllFile = Boolean.parseBoolean(property);
             long now = importFile(dbProxy, fileName, processAllFile);
@@ -90,7 +90,7 @@ public class Main {
             last.setTime(0L);
         }
         Date newDate = guard;
-        log.info(last);
+        log.info("Last date: {}", last);
 
         HostCache cache = new HostCache(dbProxy);
         LineProcessor processor = new LineProcessor(cache, dbProxy.getNetworks());
@@ -119,7 +119,7 @@ public class Main {
             }
             lines++;
         }
-        log.info(lines + " Comments: " + comments + ", Effective lines: " + goodLines + ", Old lines:" + oldlines);
+        log.info("Total lines: {}, comments: {}, effective lines: {}, old lines: {}", lines, comments, goodLines, oldlines);
         return now;
     }
 
